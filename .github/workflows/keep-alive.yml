@@ -2,17 +2,27 @@ name: Keep Vidara Files Alive
 
 on:
   schedule:
-    # Berjalan otomatis pada tanggal 1 dan tanggal 16 setiap bulan jam 00:00 UTC (setiap 15 hari)
     - cron: '0 0 1,16 * *'
-  workflow_dispatch: # Memungkinkan Anda menjalankan ini secara manual dari tab Actions
+  workflow_dispatch:
 
 jobs:
   ping-links:
     runs-on: ubuntu-latest
     steps:
-      - name: Akses URL Video Vidara
+      # Langkah wajib untuk mengunduh/membaca file dari repositori Anda terlebih dahulu
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Akses URL dari file links.txt
         run: |
-          # Ganti URL di bawah ini dengan URL file/video Vidara Anda
-          curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" -sL https://vidara.to/embed/contoh-id-video-anda
+          # Membaca file links.txt baris demi baris
+          while IFS= read -r url || [ -n "$url" ]; do
+            # Abaikan jika ada baris kosong atau komentar (diawali #)
+            [[ -z "$url" || "$url" == \#* ]] && continue
+            
+            echo "Mengakses: $url"
+            curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" -sL "$url"
+            sleep 2
+          done < links.txt
           
-          echo "Akses berhasil dilakukan pada $(date)"
+          echo "Semua file di links.txt berhasil di-ping pada $(date)"
