@@ -2,7 +2,8 @@ name: Keep Vidara Files Alive
 
 on:
   schedule:
-    - cron: '0 0 1,16 * *'
+    # Menggunakan cron '0 0 * * 0' untuk dieksekusi seminggu sekali (Setiap hari Minggu)
+    - cron: '0 0 * * 0'
   workflow_dispatch:
 
 jobs:
