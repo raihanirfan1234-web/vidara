@@ -1,4 +1,4 @@
-name: Freedl Keep Alive & Auto Clean (Parallel)
+name: Freedl Keep Alive & Auto Clean
 
 on:
   schedule:
@@ -11,25 +11,19 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        chunk: [1, 2] # Membagi proses menjadi 2 bagian paralel
 
     steps:
-      # Menggunakan tag versi umum utama atau versi rilis paling stabil yang kompatibel dengan runtime baru
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           set-safe-directory: 'true'
 
-      # Menggunakan tag versi umum utama untuk mendeteksi runtime Node terbaru dari runner
+      # Menginstal dependensi yang dibutuhkan skrip Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
-      # Menginstal dependensi yang dibutuhkan skrip Python
       - name: Install dependencies
         run: pip install requests
 
@@ -37,27 +31,20 @@ jobs:
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
-        run: python keep_alive.py ${{ matrix.chunk }} 2
+        # Memproses seluruh isi links.txt secara runtut tanpa dibagi-bagi (menghindari conflict)
+        run: python keep_alive.py 1 1
 
-      # Solusi tuntas untuk mencegah error 128 (unstaged changes)
+      # Proses simpan yang aman tanpa risiko tabrakan data paralel
       - name: Commit and Push if links.txt changed
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           
-          # 1. Cek apakah ada perubahan di file links.txt
           if ! git diff --quiet links.txt; then
-            echo "Menemukan link mati, mengunci komit lokal..."
-            
-            # 2. Amankan perubahan ke dalam komit lokal terlebih dahulu
+            echo "Menemukan link mati, melakukan pembaruan ke repositori..."
             git add links.txt
-            git commit -m "🧹 Auto-clean dead links (Chunk ${{ matrix.chunk }})"
-            
-            # 3. Sinkronkan repositori dengan rebase agar aman dari tabrakan antar proses paralel
-            git pull --rebase origin main
-            
-            # 4. Dorong kembali perubahan ke GitHub utama
+            git commit -m "🧹 Auto-clean dead links"
             git push origin main
           else
-            echo "Tidak ada link mati di chunk ini. links.txt aman."
+            echo "Semua link aktif. Tidak ada perubahan."
           fi
