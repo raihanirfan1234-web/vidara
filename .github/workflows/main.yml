@@ -29,7 +29,7 @@ jobs:
         with:
           python-version: '3.x'
 
-       Siram dependensi yang dibutuhkan skrip Python
+      # Menginstal dependensi yang dibutuhkan skrip Python
       - name: Install dependencies
         run: pip install requests
 
