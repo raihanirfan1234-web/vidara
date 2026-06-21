@@ -1,0 +1,60 @@
+name: Freedl Keep Alive & Auto Clean (Parallel)
+
+on:
+  schedule:
+    # Berjalan otomatis seminggu sekali (Setiap hari Minggu jam 07:00 WIB)
+    - cron: '0 0 * * 0'
+  workflow_dispatch: # Tombol rahasia untuk tes jalan manual kapan saja
+
+jobs:
+  ping-links:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        chunk: [1, 2] # Membagi proses menjadi 2 bagian secara paralel biar cepat
+
+    steps:
+      # Menggunakan v4 terbaru agar bebas dari peringatan Node.js deprecated
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Menggunakan v5 terbaru
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run keep alive script
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: python keep_alive.py ${{ matrix.chunk }} 2
+
+      # Solusi tuntas untuk error 128 (unstaged changes) kemarin
+      - name: Commit and Push if links.txt changed
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # 1. Cek apakah ada perubahan di file links.txt
+          if ! git diff --quiet links.txt; then
+            echo "Menemukan link mati, mengunci komit lokal..."
+            
+            # 2. Amankan perubahan ke komit lokal terlebih dahulu
+            git add links.txt
+            git commit -m "🧹 Auto-clean dead links (Chunk ${{ matrix.chunk }})"
+            
+            # 3. Sinkronkan data antar proses paralel dengan rebase
+            git pull --rebase origin main
+            
+            # 4. Kirim perubahan kembali ke GitHub
+            git push origin main
+          else
+            echo "Tidak ada link mati di chunk ini. Aman!"
+          fi
