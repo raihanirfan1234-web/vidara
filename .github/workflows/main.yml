@@ -17,13 +17,13 @@ jobs:
         chunk: [1, 2] # Membagi proses menjadi 2 bagian paralel
 
     steps:
-      # Menggunakan v4 terbaru agar terhindar dari deprecation warning Node.js
+      # Menggunakan patch versi spesifik terbaru untuk membersihkan warning Node.js
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
-      # Menggunakan v5 terbaru berbasis Node.js modern
+      # Menggunakan patch versi spesifik terbaru untuk membersihkan warning Node.js
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v5.3.0
         with:
           python-version: '3.x'
 
