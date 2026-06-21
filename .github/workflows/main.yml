@@ -4,7 +4,7 @@ on:
   schedule:
     # Berjalan otomatis seminggu sekali (Setiap hari Minggu jam 07:00 WIB)
     - cron: '0 0 * * 0'
-  workflow_dispatch: # Tombol rahasia untuk tes jalan manual kapan saja
+  workflow_dispatch: # Tombol untuk tes jalankan manual kapan saja
 
 jobs:
   ping-links:
@@ -14,14 +14,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        chunk: [1, 2] # Membagi proses menjadi 2 bagian secara paralel biar cepat
+        chunk: [1, 2] # Membagi proses menjadi 2 bagian paralel
 
     steps:
-      # Menggunakan v4 terbaru agar bebas dari peringatan Node.js deprecated
+      # Menggunakan v4 terbaru agar terhindar dari deprecation warning Node.js
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Menggunakan v5 terbaru
+      # Menggunakan v5 terbaru berbasis Node.js modern
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -36,7 +36,7 @@ jobs:
           CHAT_ID: ${{ secrets.CHAT_ID }}
         run: python keep_alive.py ${{ matrix.chunk }} 2
 
-      # Solusi tuntas untuk error 128 (unstaged changes) kemarin
+      # Solusi tuntas untuk mencegah error 128 (unstaged changes)
       - name: Commit and Push if links.txt changed
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
@@ -46,15 +46,15 @@ jobs:
           if ! git diff --quiet links.txt; then
             echo "Menemukan link mati, mengunci komit lokal..."
             
-            # 2. Amankan perubahan ke komit lokal terlebih dahulu
+            # 2. Amankan perubahan ke dalam komit lokal terlebih dahulu
             git add links.txt
             git commit -m "🧹 Auto-clean dead links (Chunk ${{ matrix.chunk }})"
             
-            # 3. Sinkronkan data antar proses paralel dengan rebase
+            # 3. Sinkronkan repositori dengan rebase agar aman dari tabrakan antar proses paralel
             git pull --rebase origin main
             
-            # 4. Kirim perubahan kembali ke GitHub
+            # 4. Dorong kembali perubahan ke GitHub utama
             git push origin main
           else
-            echo "Tidak ada link mati di chunk ini. Aman!"
+            echo "Tidak ada link mati di chunk ini. links.txt aman."
           fi
