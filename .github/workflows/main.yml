@@ -17,16 +17,19 @@ jobs:
         chunk: [1, 2] # Membagi proses menjadi 2 bagian paralel
 
     steps:
-      # Menggunakan patch versi spesifik terbaru untuk membersihkan warning Node.js
+      # Menggunakan tag versi umum utama atau versi rilis paling stabil yang kompatibel dengan runtime baru
       - name: Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v4
+        with:
+          set-safe-directory: 'true'
 
-      # Menggunakan patch versi spesifik terbaru untuk membersihkan warning Node.js
+      # Menggunakan tag versi umum utama untuk mendeteksi runtime Node terbaru dari runner
       - name: Set up Python
-        uses: actions/setup-python@v5.3.0
+        uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
+       Siram dependensi yang dibutuhkan skrip Python
       - name: Install dependencies
         run: pip install requests
 
